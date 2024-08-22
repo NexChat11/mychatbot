@@ -1,0 +1,529 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat Widget Example</title>
+    <style>
+      body {
+        font-family: "Arial", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f0f0f0;
+        /* Light mode background */
+        color: #333;
+        /* Light mode text color */
+        transition:
+          background-color 0.3s,
+          color 0.3s;
+      }
+
+      .dark-mode body {
+        background-color: #121212;
+        /* Dark mode background */
+        color: #e0e0e0;
+        /* Dark mode text color */
+      }
+
+      .chat-container {
+        position: fixed;
+        bottom: 80px;
+        /* Adjusted to move the chat window higher up */
+        right: 0;
+        width: 360px;
+        height: 500px;
+        display: none;
+        flex-direction: column;
+        border-radius: 15px;
+        background: linear-gradient(135deg, #ffffff, #f1f1f1);
+        /* Light mode background */
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        transition:
+          transform 0.3s ease,
+          background 0.3s;
+      }
+
+      .dark-mode .chat-container {
+        background: linear-gradient(135deg, #333333, #1e1e1e);
+        /* Dark mode background */
+      }
+
+      .chat-header {
+        background-color: #0056b3;
+        /* Light mode header color */
+        color: #fff;
+        padding: 15px;
+        text-align: center;
+        font-size: 20px;
+        font-weight: 600;
+        border-top-left-radius: 15px;
+        border-top-right-radius: 15px;
+        border-bottom: 2px solid #004494;
+        position: relative;
+        transition:
+          background-color 0.3s,
+          border-bottom-color 0.3s;
+      }
+
+      .dark-mode .chat-header {
+        background-color: #1e1e1e;
+        /* Dark mode header color */
+        border-bottom-color: #333;
+        /* Dark mode border color */
+      }
+
+      .chat-header::after {
+        content: "";
+        position: absolute;
+        bottom: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 0;
+        height: 0;
+        border-left: 10px solid transparent;
+        border-right: 10px solid transparent;
+        border-top: 10px solid #0056b3;
+        /* Light mode triangle color */
+      }
+
+      .dark-mode .chat-header::after {
+        border-top-color: #1e1e1e;
+        /* Dark mode triangle color */
+      }
+
+      .chat-box {
+        flex: 1;
+        padding: 15px;
+        overflow-y: auto;
+        border-bottom: 2px solid #ddd;
+        /* Light mode border color */
+        transition: border-bottom-color 0.3s;
+      }
+
+      .dark-mode .chat-box {
+        border-bottom-color: #333;
+        /* Dark mode border color */
+      }
+
+      #user-input {
+        width: calc(100% - 90px);
+        padding: 10px;
+        border: none;
+        border-top: 2px solid #ddd;
+        /* Light mode border color */
+        border-bottom-left-radius: 10px;
+        border-top-left-radius: 10px;
+        font-size: 14px;
+        background: #ffffff;
+        /* Light mode input background */
+        color: #333;
+        /* Light mode input text color */
+      }
+
+      .dark-mode #user-input {
+        border-top-color: #333;
+        /* Dark mode border color */
+        background: #1e1e1e;
+        /* Dark mode input background */
+        color: #e0e0e0;
+        /* Dark mode input text color */
+      }
+
+      #send-btn {
+        width: 90px;
+        border: none;
+        background-color: #0056b3;
+        /* Light mode button color */
+        color: #fff;
+        padding: 10px;
+        cursor: pointer;
+        border-top: 2px solid #ddd;
+        /* Light mode border color */
+        border-bottom-right-radius: 10px;
+        border-top-right-radius: 10px;
+        font-size: 14px;
+      }
+
+      .dark-mode #send-btn {
+        background-color: #333;
+        /* Dark mode button color */
+        border-top-color: #333;
+        /* Dark mode border color */
+      }
+
+      #send-btn:hover {
+        background-color: #004494;
+        /* Light mode button hover color */
+      }
+
+      .dark-mode #send-btn:hover {
+        background-color: #1a1a1a;
+        /* Dark mode button hover color */
+      }
+
+      #typing-indicator {
+        font-size: 14px;
+        color: #aaa;
+        /* Light mode typing indicator color */
+        margin: 5px 0;
+      }
+
+      .dark-mode #typing-indicator {
+        color: #666;
+        /* Dark mode typing indicator color */
+      }
+
+      .message {
+        margin: 5px 0;
+        padding: 10px;
+        border-radius: 20px;
+        max-width: 80%;
+        font-size: 14px;
+        position: relative;
+        transition: background 0.3s ease;
+      }
+
+      .user-message {
+        background-color: #e0f7fa;
+        /* Light mode user message background */
+        align-self: flex-end;
+        border: 1px solid #b2ebf2;
+        border-radius: 20px 20px 0 20px;
+      }
+
+      .dark-mode .user-message {
+        background-color: #004d40;
+        /* Dark mode user message background */
+        border: 1px solid #00796b;
+      }
+
+      .bot-message {
+        background-color: #f1f8e9;
+        /* Light mode bot message background */
+        align-self: flex-start;
+        border: 1px solid #c5e1a5;
+        border-radius: 20px 20px 20px 0;
+      }
+
+      .dark-mode .bot-message {
+        background-color: #1b5e20;
+        /* Dark mode bot message background */
+        border: 1px solid #4caf50;
+      }
+
+      .options {
+        margin: 5px 0;
+      }
+
+      .option-btn {
+        display: block;
+        margin: 5px 0;
+        padding: 10px;
+        border: none;
+        background-color: #0056b3;
+        /* Light mode option button color */
+        color: #fff;
+        cursor: pointer;
+        border-radius: 10px;
+        text-align: center;
+        font-size: 14px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transition: background 0.3s ease;
+      }
+
+      .dark-mode .option-btn {
+        background-color: #333;
+        /* Dark mode option button color */
+      }
+
+      .option-btn:hover {
+        background-color: #004494;
+        /* Light mode option button hover color */
+      }
+
+      .dark-mode .option-btn:hover {
+        background-color: #1a1a1a;
+        /* Dark mode option button hover color */
+      }
+
+      .chat-icon {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 60px;
+        height: 60px;
+        background-color: #0056b3;
+        /* Light mode chat icon color */
+        color: #fff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        cursor: pointer;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        transition:
+          transform 0.3s ease,
+          background 0.3s ease;
+      }
+
+      .dark-mode .chat-icon {
+        background-color: #333;
+        /* Dark mode chat icon color */
+      }
+
+      .chat-icon:hover {
+        background-color: #004494;
+        /* Light mode chat icon hover color */
+        transform: scale(1.1);
+      }
+
+      .dark-mode .chat-icon:hover {
+        background-color: #1a1a1a;
+        /* Dark mode chat icon hover color */
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="chat-container" id="chat-container">
+      <div class="chat-header">
+        ShopBot
+        <button
+          id="theme-toggle"
+          style="
+            position: absolute;
+            right: 15px;
+            top: 15px;
+            background: none;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            font-size: 16px;
+          "
+        >
+          🌙
+        </button>
+      </div>
+      <div class="chat-box" id="chat-box">
+        <div id="typing-indicator"></div>
+      </div>
+      <input type="text" id="user-input" placeholder="Type a message..." />
+      <button id="send-btn">Send</button>
+    </div>
+    <div class="chat-icon" id="chat-icon">💬</div>
+    <script>
+      const chatContainer = document.getElementById("chat-container");
+      const chatIcon = document.getElementById("chat-icon");
+      const themeToggle = document.getElementById("theme-toggle");
+      const body = document.body;
+
+      let isDarkMode = false;
+
+      chatIcon.addEventListener("click", () => {
+        chatContainer.style.display =
+          chatContainer.style.display === "none" ||
+          chatContainer.style.display === ""
+            ? "flex"
+            : "none";
+        chatContainer.style.transform =
+          chatContainer.style.transform === "scale(1.1)"
+            ? "scale(1)"
+            : "scale(1.1)";
+      });
+
+      document
+        .getElementById("send-btn")
+        .addEventListener("click", sendMessage);
+      document
+        .getElementById("user-input")
+        .addEventListener("keypress", function (event) {
+          if (event.key === "Enter") {
+            event.preventDefault(); // Prevents the default action of the Enter key (e.g., form submission)
+            sendMessage();
+          }
+        });
+
+      themeToggle.addEventListener("click", () => {
+        isDarkMode = !isDarkMode;
+        body.classList.toggle("dark-mode", isDarkMode);
+        themeToggle.textContent = isDarkMode ? "🌞" : "🌙"; // Toggle icon based on mode
+      });
+
+      function sendMessage() {
+        const userInput = document.getElementById("user-input").value;
+        if (userInput.trim() !== "") {
+          addMessage("user", userInput);
+          document.getElementById("user-input").value = "";
+          showTypingIndicator(true);
+          setTimeout(() => {
+            showTypingIndicator(false);
+            processUserInput(userInput);
+          }, 1000); // Simulate typing delay
+        }
+      }
+
+      function showTypingIndicator(show) {
+        const typingIndicator = document.getElementById("typing-indicator");
+        typingIndicator.textContent = show ? "Bot is typing..." : "";
+      }
+
+      function addMessage(sender, text) {
+        const chatBox = document.getElementById("chat-box");
+        const message = document.createElement("div");
+        message.className =
+          sender === "user" ? "message user-message" : "message bot-message";
+        message.textContent = text;
+        chatBox.appendChild(message);
+        chatBox.scrollTop = chatBox.scrollHeight; // Scroll to the bottom
+      }
+
+      function addOptions(options) {
+        const chatBox = document.getElementById("chat-box");
+        const optionsContainer = document.createElement("div");
+        optionsContainer.className = "options";
+        options.forEach((option) => {
+          const button = document.createElement("button");
+          button.className = "option-btn";
+          button.textContent = option.text;
+          button.onclick = () => {
+            addMessage("user", option.text);
+            addMessage("bot", option.response);
+            document
+              .querySelectorAll(".option-btn")
+              .forEach((btn) => btn.remove());
+          };
+          optionsContainer.appendChild(button);
+        });
+        chatBox.appendChild(optionsContainer);
+        chatBox.scrollTop = chatBox.scrollHeight; // Scroll to the bottom
+      }
+
+      function closeChat() {
+        chatContainer.style.display = "none";
+      }
+
+      function processUserInput(userInput) {
+        let response = "";
+
+        // Simple keyword matching for demonstration
+        if (userInput.toLowerCase().includes("bye")) {
+          closeChat();
+          return;
+        }
+
+        if (
+          userInput.toLowerCase().includes("product") ||
+          userInput.toLowerCase().includes("item")
+        ) {
+          response =
+            "We have a variety of products available. Please choose an option below:";
+          addOptions([
+            {
+              text: "Electronics",
+              response:
+                "We have the latest gadgets in electronics. What specifically are you looking for?",
+            },
+            {
+              text: "Clothing",
+              response:
+                "Check out our new clothing line. What type of clothing are you interested in?",
+            },
+            {
+              text: "Accessories",
+              response:
+                "Explore our accessories collection. What kind of accessories do you need?",
+            },
+          ]);
+        } else if (userInput.toLowerCase().includes("price")) {
+          response =
+            "Prices vary depending on the product. Please choose an option below:";
+          addOptions([
+            {
+              text: "Electronics",
+              response:
+                "Our electronics start from $100. What specific item are you interested in?",
+            },
+            {
+              text: "Clothing",
+              response:
+                "Our clothing prices start from $20. What type of clothing are you looking for?",
+            },
+            {
+              text: "Accessories",
+              response:
+                "Accessories start from $10. Let us know what you need!",
+            },
+          ]);
+        } else if (userInput.toLowerCase().includes("shipping")) {
+          response =
+            "We offer standard and expedited shipping options. Please select an option below:";
+          addOptions([
+            {
+              text: "Standard Shipping",
+              response: "Standard shipping typically takes 5-7 business days.",
+            },
+            {
+              text: "Expedited Shipping",
+              response: "Expedited shipping usually takes 2-3 business days.",
+            },
+          ]);
+        } else if (
+          userInput.toLowerCase().includes("return") ||
+          userInput.toLowerCase().includes("refund")
+        ) {
+          response =
+            "Our return policy allows returns within 30 days. Choose an option below for more details:";
+          addOptions([
+            {
+              text: "Return Policy",
+              response:
+                "You can return items within 30 days. Please contact our support for more details.",
+            },
+            {
+              text: "Refund Process",
+              response:
+                "Refunds are processed within 5-7 business days after receiving the returned item.",
+            },
+          ]);
+        } else if (userInput.toLowerCase().includes("contact")) {
+          response = "You can contact us through the following options:";
+          addMessage(
+            "bot",
+            "You can contact us at support@example.com or call us at 123-456-7890.",
+          );
+        } else {
+          response =
+            "I'm sorry, I didn't understand that. Can you please choose from the options below?";
+          addOptions([
+            {
+              text: "Product Information",
+              response:
+                "We have a wide range of products. What are you interested in?",
+            },
+            {
+              text: "Pricing",
+              response: "Let me provide information about our pricing.",
+            },
+            {
+              text: "Shipping Details",
+              response: "I can help with shipping information.",
+            },
+            {
+              text: "Returns and Refunds",
+              response: "I can provide details about returns and refunds.",
+            },
+            {
+              text: "Contact Information",
+              response: "Here is how you can contact us.",
+            },
+          ]);
+        }
+
+        if (response && !document.querySelector(".options")) {
+          addMessage("bot", response);
+        }
+      }
+    </script>
+  </body>
+</html>
